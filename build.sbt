@@ -6,11 +6,14 @@ name := "play-json-helpers"
 
 version := "1.0-SNAPSHOT"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.10.4"
 
 crossScalaVersions := Seq("2.10.4","2.11.6")
 
+resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+
 libraryDependencies ++= Seq(
+  "com.typesafe.play" % "play-json_2.10" % "2.2.2",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 

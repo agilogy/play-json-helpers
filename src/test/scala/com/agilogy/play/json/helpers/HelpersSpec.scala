@@ -106,7 +106,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   it should "ommit a default value when writting and read it when not present" in {
     implicit val companyFormat = companyFmt
-    val f: Format[Person] = Json.format[Person].withDefaultValue("company", agilogy)
+    val f: Format[Person] = Json.format[Person].withDefaultValue("company", agilogy).withDefaultValue("name", "John")
     val j = Person("Jordi", 38, Some(agilogy))
     val json = f.writes(j)
     assert((json \ "company").asOpt === None)
@@ -116,13 +116,21 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(f.reads(json).get === j)
   }
 
-  //  they should "return a writes when invoked on a writes" in {
-  //    import Writes.traversableWrites
-  //    implicit val pw: Writes[Person] = Json.writes[Person]
-  //    val w = new Writes[Seq[Person]] {
-  //      override def writes(o: Seq[Person]): JsValue = Json.arr(o.map(p => Json.toJson(p)))
-  //    }
-  //
-  //    val w2 = w.writeWithOverridedKeyWhen("age", _ => true, _ => Some(18))
+  case class Optionals(foo: Option[String], bar: Option[Int])
+
+  it should "chain default values" in {
+    val f: Format[Optionals] = Json.format[Optionals].withDefaultValue("foo", "fooValue").withDefaultValue("bar", 43)
+    val v = Optionals(Some("fooValue"), Some(43))
+    val json = f.writes(v)
+    assert(json === Json.obj())
+    val opts = f.reads(Json.obj())
+    assert(opts.get === v)
+
+  }
+
+  //  it should "chain transformations" in {
+  //    implicit val companyFormat = companyFmt
+  //    val f: Format[Person] = Json.format[Person].readWithDefaultValue("name", "John").readWithDefaultValue("age", 33).withDefaultValue("company", agilogy).writeSettingKey("hasCompany", p => Some(p.company.nonEmpty))
   //  }
+
 }

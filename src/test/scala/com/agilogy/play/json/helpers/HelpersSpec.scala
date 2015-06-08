@@ -11,23 +11,23 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   case class Person(name: String, age: Int, company: Option[Company])
   case class Company(name: String, cif: Long)
-  implicit val companyFmt: Format[Company] = Json.format[Company]
+  val companyFmt: Format[Company] = Json.format[Company]
+  val agilogy = Company("Agilogy", 123456)
 
-  "Json helper read with default value" should "return a Reads when using with Reads" in {
+  behavior of "Json helper read with default value"
+
+  it should "return a Reads when using with Reads" in {
+    implicit val companyFormat = companyFmt
     Json.reads[Person].readWithDefaultKey("company", Company("Agilogy", 123456)).isInstanceOf[Reads[Person]] shouldBe true
   }
 
-  "Json helper read with default value" should "return a Format when using with Format" in {
+  it should "return a Format when using with Format" in {
+    implicit val companyFormat = companyFmt
     Json.format[Person].readWithDefaultKey("company", Company("Agilogy", 123456)).isInstanceOf[Format[Person]] shouldBe true
   }
 
-  "Json helper read with default value" should "let the value of the json if the key exists" in {
-    implicit val companyFmt: Format[Company] = Json.format[Company]
-    implicit val personReads: Reads[Person] = Json.reads[Person]
-      .readWithDefaultKey("company", Company("Agilogy", 123456))
-
-    val person: Person = personReads.reads(Json.parse(
-      """
+  val jsonPersonWithCompany: JsValue = Json.parse(
+    """
       {
         "name": "John",
         "age": 30,
@@ -36,54 +36,70 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
           "cif" : 1010101
         }
       }
-      """
-    )).get
+    """
+  )
 
-    person should ===(Person("John", 30, Some(Company("World Inc.", 1010101))))
-  }
+  val personWithoutCompany = Person("John", 30, company = None)
 
-  "Json helper read with default value" should "add the default value to the json if the key doesn't exist" in {
-    implicit val companyFmt: Format[Company] = Json.format[Company]
-    implicit val personReads: Reads[Person] = Json.reads[Person]
-      .readWithDefaultKey("company", Company("Agilogy", 123456))
-
-    val person: Person = personReads.reads(Json.parse(
-      """
+  val jsonPersonWithoutCompany = Json.parse(
+    """
       {
         "name": "John",
         "age": 30
       }
-      """
-    )).get
+    """
+  )
 
-    person should ===(Person("John", 30, Some(Company("Agilogy", 123456))))
+  it should "let the value of the json if the key exists" in {
+    implicit val companyWrites = companyFmt
+    implicit val personReads: Reads[Person] = Json.reads[Person].readWithDefaultKey("company", agilogy)
+    val person: Person = personReads.reads(jsonPersonWithCompany).get
+    assert(person === Person("John", 30, Some(Company("World Inc.", 1010101))))
+  }
+
+  it should "add the default value to the json if the key doesn't exist" in {
+    implicit val companyWrites = companyFmt
+    implicit val personReads: Reads[Person] = Json.reads[Person].readWithDefaultKey("company", agilogy)
+    val person: Person = personReads.reads(jsonPersonWithoutCompany).get
+    assert(person === Person("John", 30, Some(agilogy)))
+  }
+
+  it should "transform a format as well, returning a format" in {
+    implicit val companyWrites = companyFmt
+    implicit val f: Format[Person] = Json.format[Person].readWithDefaultKey("company", agilogy)
+    assert(f.reads(jsonPersonWithoutCompany).get == Person("John", 30, company = Some(agilogy)))
   }
 
   behavior of "Writes helper"
 
   they should "overwrites a property in an object only if a condition is met" in {
-    import Builders._
-    // IntelliJ needs some hints to understand the line:
-    val ow = Json.writes[Person]
-    val w = ow.writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))(implicitly[Writes[Int]], WritesBuilder.writesInstance)
-    val reads = Json.reads[Person]
-    val p = Person("John", 30, company = None)
+    implicit val companyFormat = companyFmt
+    val w = Json.writes[Person].writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))
+    val p = personWithoutCompany
     val res = w.writes(p)
-    assert(reads.reads(res).get === p)
-    val j = Person("Jordi", 38, Some(Company("agilogy", 1234567)))
-    assert(reads.reads(w.writes(j)).get == j.copy(age = 18))
+    assert(res === jsonPersonWithoutCompany)
+    val j = Person("Jordi", 38, Some(agilogy))
+    val res2 = w.writes(j)
+    assert(res2 \ "name" === JsString("Jordi"))
+    assert(res2 \ "age" === JsNumber(18))
+    assert(res2 \ "company" === companyFormat.writes(agilogy))
+
   }
 
-  they should "overwrites a property in an object (whena applied on a format) only if a condition is met" in {
-    import Builders._
-    // IntelliJ needs some hints to understand the line:
-    //    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen[Int,Format]("age", _.name == "Jordi", _ => Some(18))
-    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))
-    val p = Person("John", 30, company = None)
+  they should "overwrites a property in an object (when applied on a format) only if a condition is met" in {
+    implicit val companyFormat = companyFmt
+    // IntelliJ needs some hints to understand the line. Otherwise, the following line is totally valid:
+    //    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))
+    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen[Int, Format]("age", _.name == "Jordi", _ => Some(18))
+    val p = personWithoutCompany
     val res = f.writes(p)
-    assert(f.reads(res).get === p)
-    val j = Person("Jordi", 38, Some(Company("agilogy", 1234567)))
-    assert(f.reads(f.writes(j)).get == j.copy(age = 18))
+    assert(res === jsonPersonWithoutCompany)
+    val j = Person("Jordi", 38, Some(agilogy))
+    val res2 = f.writes(j)
+    assert(res2 \ "name" === JsString("Jordi"))
+    assert(res2 \ "age" === JsNumber(18))
+    assert(res2 \ "company" === companyFormat.writes(agilogy))
+    assert(f.reads(jsonPersonWithoutCompany).get === p, "The reads continues working normally")
   }
 
   //  they should "return a writes when invoked on a writes" in {

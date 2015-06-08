@@ -9,14 +9,22 @@ object Builders {
   }
 
   object WritesBuilder {
-    implicit val writesInstance = new WritesBuilder[Writes, Writes] {
+
+    //    implicit val owritesInstance: WritesBuilder[OWrites, Writes] = new WritesBuilder[OWrites, Writes] {
+    //      override def buildWrites[Elem](from: OWrites[Elem], w: Writes[Elem]): Writes[Elem] = w
+    //    }
+
+    implicit val writesInstance: WritesBuilder[Writes, Writes] = new WritesBuilder[Writes, Writes] {
       override def buildWrites[Elem](from: Writes[Elem], w: Writes[Elem]): Writes[Elem] = w
     }
+
+    //    implicit val oformatInstance = new WritesBuilder[OFormat, Format] {
+    //      override def buildWrites[Elem](from: OFormat[Elem], w: Writes[Elem]): Format[Elem] = Format(from, w)
+    //    }
 
     implicit val formatInstance = new WritesBuilder[Format, Format] {
       override def buildWrites[Elem](from: Format[Elem], w: Writes[Elem]): Format[Elem] = Format(from, w)
     }
-
   }
 
   trait ReadsBuilder[R[_] <: Reads[_]] {
@@ -25,15 +33,15 @@ object Builders {
 
   object ReadsBuilder {
 
-    implicit val readsInstance = new ReadsBuilder[Reads] {
+    implicit val readsInstance: ReadsBuilder[Reads] = new ReadsBuilder[Reads] {
       override def buildReads[Elem](from: Reads[Elem], r: Reads[Elem]): Reads[Elem] = r
     }
-    implicit val formatInstance = new ReadsBuilder[Format] {
+    implicit val formatInstance: ReadsBuilder[Format] = new ReadsBuilder[Format] {
       override def buildReads[Elem](from: Format[Elem], r: Reads[Elem]): Format[Elem] = Format(r, from)
     }
-    implicit val oFormatInstance = new ReadsBuilder[OFormat] {
+    implicit val oFormatInstance: ReadsBuilder[OFormat] = new ReadsBuilder[OFormat] {
       override def buildReads[Elem](from: OFormat[Elem], r: Reads[Elem]): OFormat[Elem] = OFormat(r, from)
     }
   }
-}
 
+}

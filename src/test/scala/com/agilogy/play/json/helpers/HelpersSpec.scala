@@ -18,12 +18,12 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   it should "return a Reads when using with Reads" in {
     implicit val companyFormat = companyFmt
-    Json.reads[Person].readWithDefaultKey("company", Company("Agilogy", 123456)).isInstanceOf[Reads[Person]] shouldBe true
+    Json.reads[Person].readWithDefaultValue("company", Company("Agilogy", 123456)).isInstanceOf[Reads[Person]] shouldBe true
   }
 
   it should "return a Format when using with Format" in {
     implicit val companyFormat = companyFmt
-    Json.format[Person].readWithDefaultKey("company", Company("Agilogy", 123456)).isInstanceOf[Format[Person]] shouldBe true
+    Json.format[Person].readWithDefaultValue("company", Company("Agilogy", 123456)).isInstanceOf[Format[Person]] shouldBe true
   }
 
   val jsonPersonWithCompany: JsValue = Json.parse(
@@ -52,21 +52,21 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   it should "let the value of the json if the key exists" in {
     implicit val companyWrites = companyFmt
-    implicit val personReads: Reads[Person] = Json.reads[Person].readWithDefaultKey("company", agilogy)
+    implicit val personReads: Reads[Person] = Json.reads[Person].readWithDefaultValue("company", agilogy)
     val person: Person = personReads.reads(jsonPersonWithCompany).get
     assert(person === Person("John", 30, Some(Company("World Inc.", 1010101))))
   }
 
   it should "add the default value to the json if the key doesn't exist" in {
     implicit val companyWrites = companyFmt
-    implicit val personReads: Reads[Person] = Json.reads[Person].readWithDefaultKey("company", agilogy)
+    implicit val personReads: Reads[Person] = Json.reads[Person].readWithDefaultValue("company", agilogy)
     val person: Person = personReads.reads(jsonPersonWithoutCompany).get
     assert(person === Person("John", 30, Some(agilogy)))
   }
 
   it should "transform a format as well, returning a format" in {
     implicit val companyWrites = companyFmt
-    implicit val f: Format[Person] = Json.format[Person].readWithDefaultKey("company", agilogy)
+    implicit val f: Format[Person] = Json.format[Person].readWithDefaultValue("company", agilogy)
     assert(f.reads(jsonPersonWithoutCompany).get == Person("John", 30, company = Some(agilogy)))
   }
 
@@ -74,7 +74,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   they should "overwrites a property in an object only if a condition is met" in {
     implicit val companyFormat = companyFmt
-    val w = Json.writes[Person].writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))
+    val w = Json.writes[Person].writeSettingKeyWhen("age", _.name == "Jordi", _ => Some(18))
     val p = personWithoutCompany
     val res = w.writes(p)
     assert(res === jsonPersonWithoutCompany)
@@ -90,7 +90,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     implicit val companyFormat = companyFmt
     // IntelliJ needs some hints to understand the line. Otherwise, the following line is totally valid:
     //    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))
-    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen[Int, Format]("age", _.name == "Jordi", _ => Some(18))
+    val f: Format[Person] = Json.format[Person].writeSettingKeyWhen[Int, Format]("age", _.name == "Jordi", _ => Some(18))
     val p = personWithoutCompany
     val res = f.writes(p)
     assert(res === jsonPersonWithoutCompany)
@@ -100,6 +100,20 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(res2 \ "age" === JsNumber(18))
     assert(res2 \ "company" === companyFormat.writes(agilogy))
     assert(f.reads(jsonPersonWithoutCompany).get === p, "The reads continues working normally")
+  }
+
+  behavior of "Format helper withDefaultValue"
+
+  it should "ommit a default value when writting and read it when not present" in {
+    implicit val companyFormat = companyFmt
+    val f: Format[Person] = Json.format[Person].withDefaultValue("company", agilogy)
+    val j = Person("Jordi", 38, Some(agilogy))
+    val json = f.writes(j)
+    assert((json \ "company").asOpt === None)
+
+    assert(f.reads(jsonPersonWithoutCompany).get === personWithoutCompany.copy(company = Some(agilogy)))
+
+    assert(f.reads(json).get === j)
   }
 
   //  they should "return a writes when invoked on a writes" in {

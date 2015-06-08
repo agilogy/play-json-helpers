@@ -8,12 +8,13 @@ version := "1.0-SNAPSHOT"
 
 scalaVersion := "2.11.6"
 
-crossScalaVersions := Seq("2.10.5","2.11.6")
+crossScalaVersions := Seq("2.10.4","2.11.6")
 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-json" % "2.3.0",
+  "com.typesafe.play" %% "play-json" % "2.3.9",
+  "org.scalactic" %% "scalactic" % "2.2.4",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )
 

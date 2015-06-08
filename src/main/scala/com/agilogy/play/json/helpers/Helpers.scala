@@ -1,6 +1,7 @@
 package com.agilogy.play.json.helpers
 
 import play.api.libs.json._
+import org.scalactic.TypeCheckedTripleEquals._
 
 object Helpers {
 
@@ -8,9 +9,11 @@ object Helpers {
 
   implicit class WritesExtensions[A, W[A] <: Writes[A]](originalWrites: W[A]) {
 
-    def writeSettingKey[B, WR[_] <: Writes[_]](key: String, value: A => Option[B])(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] = writeSettingKeyWhen(key, _ => true, value)
+    def writeSettingKey[B, WR[_] <: Writes[_]](key: String, value: A => Option[B])(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] =
+      writeSettingKeyWhen(key, _ => true, value)
 
-    def writeSettingKeyWhen[B, WR[_] <: Writes[_]](key: String, conditionFunction: A => Boolean, replaceFunction: A => Option[B])(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] = {
+    def writeSettingKeyWhen[B, WR[_] <: Writes[_]](key: String, conditionFunction: A => Boolean,
+      replaceFunction: A => Option[B])(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] = {
       val w: Writes[A] = new Writes[A] {
         override def writes(o: A): JsObject = {
           val res = originalWrites.writes(o)
@@ -25,7 +28,8 @@ object Helpers {
       builder.buildWrites(originalWrites, w)
     }
 
-    private def writeSettingKeyWhenJson[WR[_] <: Writes[_]](key: String, conditionFunction: JsValue => Boolean, replaceFunction: JsValue => Option[JsValue])(implicit builder: WritesBuilder[W, WR]): WR[A] = {
+    private def writeSettingKeyWhenJson[WR[_] <: Writes[_]](key: String, conditionFunction: JsValue => Boolean,
+      replaceFunction: JsValue => Option[JsValue])(implicit builder: WritesBuilder[W, WR]): WR[A] = {
       val w: Writes[A] = new Writes[A] {
         override def writes(o: A): JsObject = {
           val res = originalWrites.writes(o)
@@ -40,7 +44,8 @@ object Helpers {
       builder.buildWrites(originalWrites, w)
     }
 
-    def writeWithDefaultValue[B, WR[_] <: Writes[_]](key: String, defaultValue: B)(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] = writeSettingKeyWhenJson(key, _ \ key == ev1.writes(defaultValue), _ => None)
+    def writeWithDefaultValue[B, WR[_] <: Writes[_]](key: String, defaultValue: B)(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] =
+      writeSettingKeyWhenJson(key, _ \ key === ev1.writes(defaultValue), _ => None)
 
   }
 

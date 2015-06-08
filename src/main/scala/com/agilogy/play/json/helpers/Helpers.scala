@@ -61,6 +61,7 @@ object Helpers {
   }
 
   implicit class FormatExtensions[A, F[A] <: Format[A]](originalFormat: F[A])(implicit readsBuilder: ReadsBuilder[F]) {
+
     def withDefaultValue[B, FR[_] <: Format[_]](key: String, defaultValue: B)(implicit ev: Writes[B], builder: WritesBuilder[F, FR]): FR[A] =
       originalFormat.readWithDefaultValue(key, defaultValue).writeWithDefaultValue(key, defaultValue)
 

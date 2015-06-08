@@ -125,7 +125,6 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(json === Json.obj())
     val opts = f.reads(Json.obj())
     assert(opts.get === v)
-
   }
 
   //  it should "chain transformations" in {

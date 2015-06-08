@@ -1,6 +1,7 @@
 # play-json-extras
 
 [![Build Status](https://travis-ci.org/agilogy/play-json-helpers.svg)](https://travis-ci.org/agilogy/play-json-helpers)
+[![Coverage Status](https://coveralls.io/repos/agilogy/play-json-helpers/badge.svg)](https://coveralls.io/r/agilogy/play-json-helpers)
 
 
 ## Installation

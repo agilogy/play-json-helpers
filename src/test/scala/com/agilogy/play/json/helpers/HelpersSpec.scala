@@ -72,6 +72,21 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   behavior of "Writes helper"
 
+  they should "produce an exception when setting a key on no JsObject" in {
+    val exception = intercept[IllegalArgumentException] {
+      Writes.IntWrites.writeSettingKeyWhen("age", _ === 0, _ => Some(18)).writes(18)
+    }
+  }
+
+  they should "overwrites a property in an object" in {
+    implicit val companyFormat = companyFmt
+    val w = Json.writes[Person].writeSettingKey("age", _ => Some(18))
+    val p = personWithoutCompany
+    val res = w.writes(p)
+    assert(res \ "name" === JsString("John"))
+    assert(res \ "age" === JsNumber(18))
+  }
+
   they should "overwrites a property in an object only if a condition is met" in {
     implicit val companyFormat = companyFmt
     val w = Json.writes[Person].writeSettingKeyWhen("age", _.name == "Jordi", _ => Some(18))
@@ -83,13 +98,12 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(res2 \ "name" === JsString("Jordi"))
     assert(res2 \ "age" === JsNumber(18))
     assert(res2 \ "company" === companyFormat.writes(agilogy))
-
   }
 
   they should "overwrites a property in an object (when applied on a format) only if a condition is met" in {
     implicit val companyFormat = companyFmt
     // IntelliJ needs some hints to understand the line. Otherwise, the following line is totally valid:
-    //    val f: Format[Person] = Json.format[Person].writeWithOverridedKeyWhen("age", _.name == "Jordi", _ => Some(18))
+    //    val f: Format[Person] = Json.format[Person].writeSettingKeyWhen("age", _.name == "Jordi", _ => Some(18))
     val f: Format[Person] = Json.format[Person].writeSettingKeyWhen[Int, Format]("age", _.name == "Jordi", _ => Some(18))
     val p = personWithoutCompany
     val res = f.writes(p)
@@ -103,6 +117,13 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
   }
 
   behavior of "Format helper withDefaultValue"
+
+  they should "produce an exception when setting a key on no JsObject" in {
+    val exception = intercept[IllegalArgumentException] {
+      Format(Reads.IntReads, Writes.IntWrites).withDefaultValue("age", 18).writes(18)
+    }
+
+  }
 
   it should "ommit a default value when writting and read it when not present" in {
     implicit val companyFormat = companyFmt

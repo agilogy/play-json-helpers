@@ -1,4 +1,4 @@
-# play-json-extras
+# play-json-helpers
 
 [![Build Status](https://travis-ci.org/agilogy/play-json-helpers.svg)](https://travis-ci.org/agilogy/play-json-helpers)
 [![Coverage Status](https://coveralls.io/repos/agilogy/play-json-helpers/badge.svg)](https://coveralls.io/r/agilogy/play-json-helpers)
@@ -9,7 +9,7 @@
 ```
 resolvers += Resolver.url("Agilogy Scala",url("http://dl.bintray.com/agilogy/scala/"))(Resolver.ivyStylePatterns)
 
-libraryDependencies += "com.agilogy" %% "play-json-helpers" % "1.0"
+libraryDependencies += "com.agilogy" %% "play-json-helpers" % "1.1"
 ```
 
 ## Usage

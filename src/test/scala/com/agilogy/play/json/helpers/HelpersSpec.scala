@@ -104,7 +104,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     implicit val companyFormat = companyFmt
     // IntelliJ needs some hints to understand the line. Otherwise, the following line is totally valid:
     //    val f: Format[Person] = Json.format[Person].writeSettingKeyWhen("age", _.name == "Jordi", _ => Some(18))
-    val f: Format[Person] = Json.format[Person].writeSettingKeyWhen[Int, Format]("age", _.name == "Jordi", _ => Some(18))
+    val f: Format[Person] = Json.format[Person].writeSettingKeyWhen("age", _.name == "Jordi", _ => Some(18))
     val p = personWithoutCompany
     val res = f.writes(p)
     assert(res === jsonPersonWithoutCompany)
@@ -114,6 +114,15 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(res2 \ "age" === JsNumber(18))
     assert(res2 \ "company" === companyFormat.writes(agilogy))
     assert(f.reads(jsonPersonWithoutCompany).get === p, "The reads continues working normally")
+  }
+
+  it should "remove key upon a certain condition" in {
+    implicit val companyFormat = companyFmt
+    val f = Json.format[Person].writeRemovingKeyWhen("age", _.name == "Jordi")
+    val j = Person("Jordi", 38, Some(agilogy))
+    val res = f.writes(j)
+    assert(res \ "name" === JsString("Jordi"))
+    assert((res \ "age").asOpt.isEmpty)
   }
 
   behavior of "Format helper withDefaultValue"
@@ -146,6 +155,16 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(json === Json.obj())
     val opts = f.reads(Json.obj())
     assert(opts.get === v)
+  }
+
+  it should "chain multiple transformation" in {
+    val f = Json.format[Optionals]
+      .writeWithDefaultValue("eanCode", Seq.empty[String])
+      .writeWithDefaultValue("loyaltyPoints", Some(BigDecimal(0)))
+      .writeSettingKey("offlineLoyaltyPoints", _.foo.filter(_ != ""))
+    //TODO: Check that the composed format works as expected
+    assert(f.isInstanceOf[Format[Optionals]])
+
   }
 
   //  it should "chain transformations" in {

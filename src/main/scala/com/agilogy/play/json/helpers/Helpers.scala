@@ -7,51 +7,69 @@ object Helpers {
 
   import Builders._
 
-  implicit class WritesExtensions[A, W[A] <: Writes[A]](originalWrites: W[A]) {
+  trait WritesExtensions[A, W[A] <: Writes[A], WR[A] <: Writes[A]] {
 
-    def writeSettingKey[B, WR[_] <: Writes[_]](key: String, value: A => Option[B])(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] =
+    val originalWrites: W[A]
+    val writesBuilder: WritesBuilder[W, WR]
+
+    def writeSettingKey[B: Writes](key: String, value: A => Option[B]): WR[A] =
       writeSettingKeyWhen(key, _ => true, value)
 
-    def writeSettingKeyWhen[B, WR[_] <: Writes[_]](key: String, conditionFunction: A => Boolean,
-      replaceFunction: A => Option[B])(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] = {
-      val w: Writes[A] = new Writes[A] {
-        override def writes(o: A): JsObject = {
-          val res = originalWrites.writes(o)
-          res match {
-            case jsObj: JsObject if conditionFunction(o) =>
-              (jsObj - key) ++ JsObject(replaceFunction(o).map(v => key -> ev1.writes(v)).toSeq)
-            case jsObj: JsObject => jsObj
-            case _ => throw new IllegalArgumentException()
+    def writeSettingKeyWhen[B](key: String, conditionFunction: A => Boolean,
+      replaceFunction: A => Option[B])(implicit w: Writes[B]): WR[A] = {
+      val res: Writes[A] = new Writes[A] {
+        override def writes(o: A): JsValue = {
+          val originalResult = originalWrites.writes(o)
+          originalResult match {
+            case jso: JsObject if conditionFunction(o) =>
+              (jso - key) ++ JsObject(replaceFunction(o).map(v => key -> w.writes(v)).toSeq)
+            case jso: JsObject =>
+              originalResult
+            case _ =>
+              throw new IllegalArgumentException(s"Can't set key on a ${originalResult.getClass.getSimpleName}")
           }
         }
       }
-      builder.buildWrites(originalWrites, w)
+      writesBuilder.buildWrites(originalWrites, res)
     }
 
-    private def writeSettingKeyWhenJson[WR[_] <: Writes[_]](key: String, conditionFunction: JsValue => Boolean,
-      replaceFunction: JsValue => Option[JsValue])(implicit builder: WritesBuilder[W, WR]): WR[A] = {
+    def writeRemovingKeyWhen[B](key: String, condition: A => Boolean): WR[A] = writeSettingKeyWhen[String](key, condition, _ => None)
+
+    private def writeSettingKeyWhenJson(key: String, conditionFunction: JsValue => Boolean,
+      replaceFunction: JsValue => Option[JsValue]): WR[A] = {
       val w: Writes[A] = new Writes[A] {
-        override def writes(o: A): JsObject = {
-          val res = originalWrites.writes(o)
-          res match {
-            case jsObj: JsObject if conditionFunction(res) =>
-              (jsObj - key) ++ JsObject(replaceFunction(res).map(v => key -> v).toSeq)
-            case jsObj: JsObject => jsObj
-            case _ => throw new IllegalArgumentException()
+        override def writes(o: A): JsValue = {
+          val originalResult = originalWrites.writes(o)
+          originalResult match {
+            case jso: JsObject if conditionFunction(originalResult) =>
+              (jso - key) ++ JsObject(replaceFunction(originalResult).map(v => key -> v).toSeq)
+            case jso: JsObject =>
+              originalResult
+            case _ =>
+              throw new IllegalArgumentException(s"Can't set key on a ${originalResult.getClass.getSimpleName}")
           }
         }
       }
-      builder.buildWrites(originalWrites, w)
+      writesBuilder.buildWrites(originalWrites, w)
     }
 
-    def writeWithDefaultValue[B, WR[_] <: Writes[_]](key: String, defaultValue: B)(implicit ev1: Writes[B], builder: WritesBuilder[W, WR]): WR[A] =
+    def writeWithDefaultValue[B](key: String, defaultValue: B)(implicit ev1: Writes[B]): WR[A] =
       writeSettingKeyWhenJson(key, _ \ key === ev1.writes(defaultValue), _ => None)
 
   }
 
-  implicit class ReadsExtensions[A, R[A] <: Reads[A]](originalReads: R[A])(implicit builder: ReadsBuilder[R]) {
+  implicit class ImplicitWritesExtensions[A, W[A] <: Writes[A]](val originalWrites: W[A]) extends WritesExtensions[A, W, Writes] {
+    override val writesBuilder: WritesBuilder[W, Writes] = new WritesBuilder[W, Writes] {
+      override def buildWrites[Elem](from: W[Elem], w: Writes[Elem]): Writes[Elem] = w
+    }
+  }
 
-    def readWithDefaultValue[B](key: String, defaultValue: B)(implicit ev: Writes[B]): R[A] = {
+  trait ReadsExtensions[A, R[A] <: Reads[A], RR[A] <: Reads[A]] {
+
+    val originalReads: R[A]
+    val readsBuilder: ReadsBuilder[R, RR]
+
+    def readWithDefaultValue[B](key: String, defaultValue: B)(implicit ev: Writes[B]): RR[A] = {
       val r: Reads[A] = new Reads[A] {
         override def reads(json: JsValue): JsResult[A] = {
           val res: JsValue = json match {
@@ -61,15 +79,31 @@ object Helpers {
           originalReads.reads(res)
         }
       }
-      builder.buildReads(originalReads, r)
+      readsBuilder.buildReads(originalReads, r)
     }
   }
 
-  implicit class FormatExtensions[A, F[A] <: Format[A]](originalFormat: F[A])(implicit readsBuilder: ReadsBuilder[F]) {
+  implicit class ImplicitReadsExtensions[A](val originalReads: Reads[A]) extends ReadsExtensions[A, Reads, Reads] {
+    override val readsBuilder: ReadsBuilder[Reads, Reads] = new ReadsBuilder[Reads, Reads] {
+      override def buildReads[Elem](from: Reads[Elem], r: Reads[Elem]): Reads[Elem] = r
+    }
+  }
 
-    def withDefaultValue[B, FR[_] <: Format[_]](key: String, defaultValue: B)(implicit ev: Writes[B], builder: WritesBuilder[F, FR]): FR[A] =
-      originalFormat.readWithDefaultValue(key, defaultValue).writeWithDefaultValue(key, defaultValue)
+  implicit class FormatExtensions[A, F[A] <: Format[A]](originalFormat: F[A])
+      extends WritesExtensions[A, F, Format] with ReadsExtensions[A, F, Format] {
 
+    override val originalReads: F[A] = originalFormat
+    override val originalWrites: F[A] = originalFormat
+
+    override val readsBuilder: ReadsBuilder[F, Format] = new ReadsBuilder[F, Format] {
+      override def buildReads[Elem](from: F[Elem], r: Reads[Elem]): Format[Elem] = Format[Elem](r, from)
+    }
+    override val writesBuilder: WritesBuilder[F, Format] = new WritesBuilder[F, Format] {
+      override def buildWrites[Elem](from: F[Elem], w: Writes[Elem]): Format[Elem] = Format(from, w)
+    }
+
+    def withDefaultValue[B](key: String, defaultValue: B)(implicit ev: Writes[B]): Format[A] =
+      this.readWithDefaultValue(key, defaultValue).writeWithDefaultValue(key, defaultValue)
   }
 
 }

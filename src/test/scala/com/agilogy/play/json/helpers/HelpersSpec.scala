@@ -70,6 +70,83 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(f.reads(jsonPersonWithoutCompany).get == Person("John", 30, company = Some(agilogy)))
   }
 
+  behavior of "Read with alternative key"
+
+  val jsonPersonWithOldFormat = Json.parse(
+    """
+      {
+        "oldNameKey": "John",
+        "oldAgeKey": 30
+      }
+    """
+  )
+
+  val jsonPersonWithOldFormatWithCompany = Json.parse(
+    """
+      {
+        "oldNameKey": "John",
+        "age": 30,
+        "company": {
+          "name" : "World Inc."
+        }
+      }
+    """
+  )
+
+  val jsonPersonWithCompanyInOldFormat = Json.parse(
+    """
+      {
+        "name": "John",
+        "age": 30,
+        "oldCompanyKey": {
+          "name" : "World Inc.",
+          "cif" : 1010101
+        }
+      }
+    """
+  )
+
+  it should "read json with old format" in {
+    implicit val companyReads = companyFmt
+    implicit val personReads: Reads[Person] = Json.reads[Person]
+      .readWithAlternativeKey[String]("name", "oldNameKey")
+      .readWithAlternativeKey[Int]("age", "oldAgeKey")
+    val person: Person = personReads.reads(jsonPersonWithOldFormat).get
+    assert(person === personWithoutCompany)
+  }
+
+  it should "combine correctly read with alternative key and read with default value" in {
+    implicit val companyWrites = companyFmt
+    implicit val personReads: Reads[Person] = Json.reads[Person]
+      .readWithAlternativeKey[String]("name", "oldNameKey")
+      .readWithAlternativeKey[Int]("age", "oldAgeKey")
+      .readWithDefaultValue("company", agilogy)
+    val res = personReads.reads(jsonPersonWithOldFormat)
+    val person: Person = personReads.reads(jsonPersonWithOldFormat).get
+    assert(person === Person("John", 30, Some(agilogy)))
+  }
+
+  it should "be compatible with extended readers in nested classes" in {
+    implicit val companyReader = companyFmt.readWithDefaultValue("cif", 1010101)
+    implicit val personReads: Reads[Person] = Json.reads[Person]
+      .readWithAlternativeKey[String]("name", "oldNameKey")
+      .readWithDefaultValue("age", 30)
+    val person: Person = personReads.reads(jsonPersonWithOldFormatWithCompany).get
+    assert(person === Person("John", 30, Some(Company("World Inc.", 1010101))))
+  }
+
+  it should "read correctly an alternative optional key" in {
+    implicit val companyReader = companyFmt
+    implicit val personReads: Reads[Person] = Json.reads[Person]
+      .readWithAlternativeKey[Company]("company", "oldCompanyKey")
+    val person: Person = personReads.reads(jsonPersonWithCompanyInOldFormat).get
+    assert(person === Person("John", 30, Some(Company("World Inc.", 1010101))))
+
+    val readPersonWithoutCompany: Person = personReads.reads(jsonPersonWithoutCompany).get
+    assert(readPersonWithoutCompany === personWithoutCompany)
+
+  }
+
   behavior of "Writes helper"
 
   they should "produce an exception when setting a key on no JsObject" in {

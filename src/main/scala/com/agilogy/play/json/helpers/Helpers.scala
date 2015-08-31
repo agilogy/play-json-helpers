@@ -81,6 +81,24 @@ object Helpers {
       }
       readsBuilder.buildReads(originalReads, r)
     }
+
+    def readWithAlternativeKey[B](key: String, alternativeKey: String)(implicit f: Format[B]): RR[A] = {
+      val r: Reads[A] = new Reads[A] {
+        override def reads(json: JsValue): JsResult[A] = {
+          val keyValue = json.\(key).asOpt[B](f)
+          val alternativeKeyValue = json.\(alternativeKey).asOpt[B](f)
+
+          val res: JsValue = json match {
+            case jsObj: JsObject if keyValue.isEmpty && alternativeKeyValue.isDefined =>
+              jsObj + (key -> f.writes(alternativeKeyValue.get))
+            case _ => json
+          }
+          originalReads.reads(res)
+        }
+      }
+      readsBuilder.buildReads(originalReads, r)
+    }
+
   }
 
   implicit class ImplicitReadsExtensions[A](val originalReads: Reads[A]) extends ReadsExtensions[A, Reads, Reads] {

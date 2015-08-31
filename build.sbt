@@ -4,7 +4,7 @@ organization := "com.agilogy"
 
 name := "play-json-helpers"
 
-version := "1.1"
+version := "1.2-SNAPSHOT"
 
 scalaVersion := "2.11.6"
 

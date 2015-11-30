@@ -149,11 +149,11 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   behavior of "Writes helper"
 
-  they should "produce an exception when setting a key on no JsObject" in {
-    val exception = intercept[IllegalArgumentException] {
-      Writes.IntWrites.writeSettingKeyWhen("age", _ === 0, _ => Some(18)).writes(18)
-    }
-  }
+  //  they should "produce an exception when setting a key on no JsObject" in {
+  //    val exception = intercept[IllegalArgumentException] {
+  //      Writes.IntWrites.writeSettingKeyWhen("age", _ === 0, _ => Some(18)).writes(18)
+  //    }
+  //  }
 
   they should "overwrites a property in an object" in {
     implicit val companyFormat = companyFmt
@@ -204,12 +204,12 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
 
   behavior of "Format helper withDefaultValue"
 
-  they should "produce an exception when setting a key on no JsObject" in {
-    val exception = intercept[IllegalArgumentException] {
-      Format(Reads.IntReads, Writes.IntWrites).withDefaultValue("age", 18).writes(18)
-    }
-
-  }
+  //  they should "produce an exception when setting a key on no JsObject" in {
+  //    val exception = intercept[IllegalArgumentException] {
+  //      Format(Reads.IntReads, Writes.IntWrites).withDefaultValue("age", 18).writes(18)
+  //    }
+  //
+  //  }
 
   it should "ommit a default value when writting and read it when not present" in {
     implicit val companyFormat = companyFmt

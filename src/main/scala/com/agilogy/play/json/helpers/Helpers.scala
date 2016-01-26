@@ -1,15 +1,13 @@
 package com.agilogy.play.json.helpers
 
-import com.agilogy.play.json.helpers.Builders.WritesBuilder
+import com.agilogy.play.json.helpers.Builders.{ ReadsBuilder, WritesBuilder }
 import com.agilogy.play.json.helpers.Helpers.WritesExtensions
 import play.api.libs.json._
 import org.scalactic.TypeCheckedTripleEquals._
 
 object Helpers {
 
-  import Builders._
-
-  trait WritesExtensions[A, W[A] <: OWrites[A], WR[A] <: OWrites[A]] {
+  trait WritesExtensions[A, W[A] <: Writes[A], WR[A] <: OWrites[A]] {
 
     val originalWrites: W[A]
     val writesBuilder: WritesBuilder[W, WR]
@@ -21,11 +19,15 @@ object Helpers {
       replaceFunction: A => Option[B])(implicit w: Writes[B]): WR[A] = {
       val res: OWrites[A] = new OWrites[A] {
         override def writes(o: A): JsObject = {
-          val originalResult = originalWrites.writes(o)
-          if (conditionFunction(o)) {
-            (originalResult - key) ++ JsObject(replaceFunction(o).map(v => key -> w.writes(v)).toSeq)
-          } else {
-            originalResult
+          originalWrites.writes(o) match {
+            case originalResult: JsObject =>
+              if (conditionFunction(o)) {
+                (originalResult - key) ++ JsObject(replaceFunction(o).map(v => key -> w.writes(v)).toSeq)
+              } else {
+                originalResult
+              }
+            case v: Any =>
+              throw new IllegalArgumentException(s"Can't set key on a $v")
           }
         }
       }
@@ -38,11 +40,15 @@ object Helpers {
       replaceFunction: JsValue => Option[JsValue]): WR[A] = {
       val w: OWrites[A] = new OWrites[A] {
         override def writes(o: A): JsObject = {
-          val originalResult = originalWrites.writes(o)
-          if (conditionFunction(originalResult)) {
-            (originalResult - key) ++ JsObject(replaceFunction(originalResult).map(v => key -> v).toSeq)
-          } else {
-            originalResult
+          originalWrites.writes(o) match {
+            case originalResult: JsObject =>
+              if (conditionFunction(originalResult)) {
+                (originalResult - key) ++ JsObject(replaceFunction(originalResult).map(v => key -> v).toSeq)
+              } else {
+                originalResult
+              }
+            case v: Any =>
+              throw new IllegalArgumentException(s"Can't set key on a $v")
           }
         }
       }
@@ -54,7 +60,7 @@ object Helpers {
 
   }
 
-  implicit class ImplicitWritesExtensions[A, W[A] <: OWrites[A]](val originalWrites: W[A]) extends WritesExtensions[A, W, OWrites] {
+  implicit class ImplicitWritesExtensions[A, W[A] <: Writes[A]](val originalWrites: W[A]) extends WritesExtensions[A, W, OWrites] {
     override val writesBuilder: WritesBuilder[W, OWrites] = new WritesBuilder[W, OWrites] {
       override def buildWrites[Elem](from: W[Elem], w: OWrites[Elem]): OWrites[Elem] = w
     }
@@ -103,20 +109,20 @@ object Helpers {
     }
   }
 
-  implicit class FormatExtensions[A, F[A] <: OFormat[A]](originalFormat: F[A])
-      extends WritesExtensions[A, F, OFormat] with ReadsExtensions[A, F, OFormat] {
+  implicit class FormatExtensions[A](originalFormat: Format[A])
+      extends WritesExtensions[A, Format, OFormat] with ReadsExtensions[A, Format, Format] {
 
-    override val originalReads: F[A] = originalFormat
-    override val originalWrites: F[A] = originalFormat
+    override val originalReads: Format[A] = originalFormat
+    override val originalWrites: Format[A] = originalFormat
 
-    override val readsBuilder: ReadsBuilder[F, OFormat] = new ReadsBuilder[F, OFormat] {
-      override def buildReads[Elem](from: F[Elem], r: Reads[Elem]): OFormat[Elem] = OFormat[Elem](r, from)
+    override val readsBuilder: ReadsBuilder[Format, Format] = new ReadsBuilder[Format, Format] {
+      override def buildReads[Elem](from: Format[Elem], r: Reads[Elem]): Format[Elem] = Format[Elem](r, from)
     }
-    override val writesBuilder: WritesBuilder[F, OFormat] = new WritesBuilder[F, OFormat] {
-      override def buildWrites[Elem](from: F[Elem], w: OWrites[Elem]): OFormat[Elem] = OFormat(from, w)
+    override val writesBuilder: WritesBuilder[Format, OFormat] = new WritesBuilder[Format, OFormat] {
+      override def buildWrites[Elem](from: Format[Elem], w: OWrites[Elem]): OFormat[Elem] = OFormat(from, w)
     }
 
-    def withDefaultValue[B](key: String, defaultValue: B)(implicit ev: Writes[B]): OFormat[A] =
+    def withDefaultValue[B](key: String, defaultValue: B)(implicit ev: Writes[B]): Format[A] =
       this.readWithDefaultValue(key, defaultValue).writeWithDefaultValue(key, defaultValue)
   }
 

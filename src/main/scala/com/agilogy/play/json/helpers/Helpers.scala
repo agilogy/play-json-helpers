@@ -56,7 +56,7 @@ object Helpers {
     }
 
     def writeWithDefaultValue[B](key: String, defaultValue: B)(implicit ev1: Writes[B]): WR[A] =
-      writeSettingKeyWhenJson(key, v => (v \ key).as[JsValue] === ev1.writes(defaultValue), _ => None)
+      writeSettingKeyWhenJson(key, v => (v \ key) === JsDefined(ev1.writes(defaultValue)), _ => None)
 
   }
 

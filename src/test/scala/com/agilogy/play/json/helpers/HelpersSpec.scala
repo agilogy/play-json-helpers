@@ -202,6 +202,22 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert((res \ "age").toOption.isEmpty)
   }
 
+  it should "remove a key when it has a default value" in {
+    implicit val companyFormat = companyFmt
+    val f = Json.format[Person].withDefaultValue("company", agilogy)
+    val j = Person("Jordi", 38, Some(agilogy))
+    val res = f.writes(j)
+    assert((res \ "company").toOption.isEmpty)
+  }
+
+  it should "leave an object unchanged when it doesn't have a property with the default value" in {
+    implicit val companyFormat = companyFmt
+    val f = Json.format[Person].withDefaultValue("company", agilogy)
+    val j = Person("Jordi", 38, None)
+    val res = f.writes(j)
+    assert((res \ "company").toOption.isEmpty)
+  }
+
   behavior of "Format helper withDefaultValue"
 
   //  they should "produce an exception when setting a key on no JsObject" in {

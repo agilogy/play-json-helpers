@@ -160,8 +160,8 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     val w = Json.writes[Person].writeSettingKey("age", _ => Some(18))
     val p = personWithoutCompany
     val res = w.writes(p)
-    assert(res \ "name" === JsString("John"))
-    assert(res \ "age" === JsNumber(18))
+    assert((res \ "name").get === JsString("John"))
+    assert((res \ "age").get === JsNumber(18))
   }
 
   they should "overwrites a property in an object only if a condition is met" in {
@@ -172,9 +172,9 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(res === jsonPersonWithoutCompany)
     val j = Person("Jordi", 38, Some(agilogy))
     val res2 = w.writes(j)
-    assert(res2 \ "name" === JsString("Jordi"))
-    assert(res2 \ "age" === JsNumber(18))
-    assert(res2 \ "company" === companyFormat.writes(agilogy))
+    assert((res2 \ "name").get === JsString("Jordi"))
+    assert((res2 \ "age").get === JsNumber(18))
+    assert((res2 \ "company").get === companyFormat.writes(agilogy))
   }
 
   they should "overwrites a property in an object (when applied on a format) only if a condition is met" in {
@@ -187,9 +187,9 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     assert(res === jsonPersonWithoutCompany)
     val j = Person("Jordi", 38, Some(agilogy))
     val res2 = f.writes(j)
-    assert(res2 \ "name" === JsString("Jordi"))
-    assert(res2 \ "age" === JsNumber(18))
-    assert(res2 \ "company" === companyFormat.writes(agilogy))
+    assert((res2 \ "name").get === JsString("Jordi"))
+    assert((res2 \ "age").get === JsNumber(18))
+    assert((res2 \ "company").get === companyFormat.writes(agilogy))
     assert(f.reads(jsonPersonWithoutCompany).get === p, "The reads continues working normally")
   }
 
@@ -198,8 +198,8 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
     val f = Json.format[Person].writeRemovingKeyWhen("age", _.name == "Jordi")
     val j = Person("Jordi", 38, Some(agilogy))
     val res = f.writes(j)
-    assert(res \ "name" === JsString("Jordi"))
-    assert((res \ "age").asOpt.isEmpty)
+    assert((res \ "name").get === JsString("Jordi"))
+    assert((res \ "age").toOption.isEmpty)
   }
 
   behavior of "Format helper withDefaultValue"

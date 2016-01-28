@@ -6,6 +6,8 @@ name := "play-json-helpers"
 
 version := "1.2.1"
 
+javaVersion := "1.8"
+
 scalaVersion := "2.11.6"
 
 crossScalaVersions := Seq("2.10.6","2.11.7")

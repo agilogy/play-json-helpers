@@ -1,0 +1,1 @@
+addSbtPlugin("com.agilogy" % "sbt-javaversion" % "0.2.1")

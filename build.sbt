@@ -4,7 +4,7 @@ organization := "com.agilogy"
 
 name := "play-json-helpers"
 
-version := "2.0"
+version := "2.1"
 
 javaVersion := "1.8"
 
@@ -15,7 +15,7 @@ crossScalaVersions := Seq("2.10.6","2.11.7")
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-json" % "2.4.6",
+  "com.typesafe.play" %% "play-json" % "2.5.15",
   "org.scalactic" %% "scalactic" % "2.2.4",
   "org.scalatest" %% "scalatest" % "2.2.4" % "test"
 )

@@ -4,20 +4,20 @@ organization := "com.agilogy"
 
 name := "play-json-helpers"
 
-version := "2.1"
+version := "2.2"
 
 javaVersion := "1.8"
 
 scalaVersion := "2.11.6"
 
-crossScalaVersions := Seq("2.10.6","2.11.7")
+crossScalaVersions := Seq("2.10.6","2.11.7","2.12.6")
 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.play" %% "play-json" % "2.5.15",
-  "org.scalactic" %% "scalactic" % "2.2.4",
-  "org.scalatest" %% "scalatest" % "2.2.4" % "test"
+  "com.typesafe.play" %% "play-json" % "2.6.7",
+  "org.scalactic" %% "scalactic" % "3.0.5",
+  "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 )
 
 // --> Linters
@@ -70,7 +70,7 @@ scalacOptions in Compile := (scalacOptions in Compile).value filterNot { switch 
 
 resolvers += "Linter Repository" at "https://hairyfotr.github.io/linteRepo/releases"
 
-addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.12")
+addCompilerPlugin("org.psywerx.hairyfotr" %% "linter" % "0.1.17")
 
 scalastyleFailOnError := true
 
@@ -80,7 +80,7 @@ scalastyleFailOnError := true
 // See https://github.com/sbt/sbt-scalariform
 scalariformSettings
 
-ScoverageSbtPlugin.ScoverageKeys.coverageExcludedPackages := "<empty>"
+coverageExcludedPackages := "<empty>"
 
 publishMavenStyle := false
 

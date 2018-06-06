@@ -8,9 +8,9 @@ version := "2.2"
 
 javaVersion := "1.8"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.12.6"
 
-crossScalaVersions := Seq("2.10.6","2.11.7","2.12.6")
+crossScalaVersions := Seq("2.10.7","2.11.12","2.12.6")
 
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 

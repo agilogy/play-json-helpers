@@ -7,9 +7,9 @@
 ## Installation
 
 ```
-resolvers += Resolver.url("Agilogy Scala",url("http://dl.bintray.com/agilogy/scala/"))(Resolver.ivyStylePatterns)
+resolvers += "Agilogy GitLab" at "https://gitlab.com/api/v4/groups/583742/-/packages/maven"
 
-libraryDependencies += "com.agilogy" %% "play-json-helpers" % "1.1"
+libraryDependencies += "com.agilogy" %% "play-json-helpers" % "2.3"
 ```
 
 ## Usage
@@ -19,6 +19,14 @@ TO-DO
 ## TO-DO
 
 - Document the library
+
+## Publishing
+
+To publish this package to Agilogy's Package Registry, set the `GITLAB_DEPLOY_TOKEN` environment variable and then run the following command in sbt:
+
+```
+sbt:play-json-helpers> +publish
+```
 
 ## Copyright
 

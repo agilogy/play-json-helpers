@@ -110,7 +110,7 @@ object Helpers {
   }
 
   implicit class FormatExtensions[A](originalFormat: Format[A])
-      extends WritesExtensions[A, Format, OFormat] with ReadsExtensions[A, Format, Format] {
+    extends WritesExtensions[A, Format, OFormat] with ReadsExtensions[A, Format, Format] {
 
     override val originalReads: Format[A] = originalFormat
     override val originalWrites: Format[A] = originalFormat

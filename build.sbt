@@ -1,18 +1,21 @@
-import bintray.Keys._
+import com.gilcloud.sbt.gitlab.{GitlabCredentials,GitlabPlugin}
 
 organization := "com.agilogy"
 
 name := "play-json-helpers"
 
-version := "2.2"
+version := "2.3"
 
-javaVersion := "1.8"
+javaVersionPrefix in javaVersionCheck := Some("1.8")
 
-scalaVersion := "2.12.6"
+(compile in Compile) := ((compile in Compile) dependsOn javaVersionCheck).value
+(test in Test) := ((test in Test) dependsOn javaVersionCheck).value
 
-crossScalaVersions := Seq("2.10.7","2.11.12","2.12.6")
+scalaVersion := "2.12.13"
 
-resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
+crossScalaVersions := Seq("2.11.12","2.12.13")
+
+resolvers += "Typesafe repository" at "https://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-json" % "2.6.7",
@@ -78,22 +81,22 @@ scalastyleFailOnError := true
 
 // Reformat at every compile.
 // See https://github.com/sbt/sbt-scalariform
-scalariformSettings
-
 coverageExcludedPackages := "<empty>"
 
-publishMavenStyle := false
+// --> gitlab
 
-// --> bintray
+GitlabPlugin.autoImport.gitlabGroupId := None
+GitlabPlugin.autoImport.gitlabProjectId := Some(26236490)
+GitlabPlugin.autoImport.gitlabDomain := "gitlab.com"
 
-seq(bintrayPublishSettings:_*)
+GitlabPlugin.autoImport.gitlabCredentials := {
+    val token = sys.env.get("GITLAB_DEPLOY_TOKEN") match {
+        case Some(token) => token
+        case None =>
+            sLog.value.warn(s"Environment variable GITLAB_DEPLOY_TOKEN is undefined, 'publish' will fail.")
+            ""
+    }
+    Some(GitlabCredentials("Deploy-Token", token))
+}
 
-repository in bintray := "scala"
-
-bintrayOrganization in bintray := Some("agilogy")
-
-packageLabels in bintray := Seq("scala")
-
-licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))
-
-// <-- bintray
+// <-- gitlab

@@ -36,8 +36,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
           "cif" : 1010101
         }
       }
-    """
-  )
+    """)
 
   val personWithoutCompany = Person("John", 30, company = None)
 
@@ -47,8 +46,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
         "name": "John",
         "age": 30
       }
-    """
-  )
+    """)
 
   it should "let the value of the json if the key exists" in {
     implicit val companyWrites = companyFmt
@@ -78,8 +76,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
         "oldNameKey": "John",
         "oldAgeKey": 30
       }
-    """
-  )
+    """)
 
   val jsonPersonWithOldFormatWithCompany = Json.parse(
     """
@@ -90,8 +87,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
           "name" : "World Inc."
         }
       }
-    """
-  )
+    """)
 
   val jsonPersonWithCompanyInOldFormat = Json.parse(
     """
@@ -103,8 +99,7 @@ class HelpersSpec extends FlatSpec with Matchers with TypeCheckedTripleEquals wi
           "cif" : 1010101
         }
       }
-    """
-  )
+    """)
 
   it should "read json with old format" in {
     implicit val companyReads = companyFmt
